@@ -4,91 +4,150 @@ import { useGame } from '../../context/GameContext';
 import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
+// API 서버 주소
+const API_BASE_URL = 'http://192.168.8.204:8000';
+
 const Stage2 = () => {
   const { addDialogue, addItemToInventory, goToNextStage } = useGame();
-  const [showChoices, setShowChoices] = useState(false);
-  const [answered, setAnswered] = useState(false);
-
-  const choices = [
-    {
-      id: 1,
-      text: '죄송하지만 지금 급한 일이 있어서 나중에 할게요.',
-      isCorrect: false,
-      keywords: [],
-    },
-    {
-      id: 2,
-      text: '현재 리소스가 풀이라 다른 업무는 내일 시작 가능할 것 같아요. 이 아이디어를 디벨롭해서 팀에 공유드릴게요!',
-      isCorrect: true,
-      keywords: ['리소스', '풀', '디벨롭', '공유'],
-    },
-    {
-      id: 3,
-      text: '네, 바로 하겠습니다!',
-      isCorrect: false,
-      keywords: [],
-    },
-  ];
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [isEnded, setIsEnded] = useState(false);
+  const [turnCount, setTurnCount] = useState(0);
 
   useEffect(() => {
-    // 초기 NPC 대화
-    const timer1 = setTimeout(() => {
+    // 컴포넌트 마운트 시 대화 시작
+    startConversation();
+  }, []);
+
+  const startConversation = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/conversation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [],
+          scenario_id: 2, // 2단계 시나리오
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!response.ok) {
+        throw new Error('대화 시작 실패');
+      }
+
+      const data = await response.json();
+
+      // AI 첫 메시지를 messages와 dialogueHistory에 추가
+      const aiMessage = { role: 'assistant', content: data.message };
+      setMessages([aiMessage]);
+
       addDialogue({
         sender: 'npc',
-        text: '저기요~ 갑자기 급한 업무가 생겼는데요,\n이거 좀 도와주실 수 있나요? 🙏',
+        text: data.message,
         timestamp: getCurrentTime(),
       });
-    }, 500);
 
-    const timer2 = setTimeout(() => {
+      setTurnCount(data.turn_count);
+    } catch (error) {
+      console.error('대화 시작 오류:', error);
       addDialogue({
         sender: 'npc',
-        text: '지금 하던 업무도 있으실 텐데...\n어떻게 대응하시겠어요?',
+        text: '대화를 시작하는 중 오류가 발생했습니다. 다시 시도해주세요.',
         timestamp: getCurrentTime(),
       });
-    }, 2500);
+    }
+  };
 
-    const timer3 = setTimeout(() => {
-      setShowChoices(true);
-    }, 4000);
+  const handleSend = async () => {
+    if (!userInput.trim() || isLoading || isEnded) return;
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  }, [addDialogue]);
+    const userMessage = userInput.trim();
+    setUserInput('');
 
-  const handleChoice = (choice) => {
-    if (answered) return;
-
-    // 사용자 응답 추가
+    // 사용자 메시지를 dialogueHistory에 추가
     addDialogue({
       sender: 'user',
-      text: choice.text,
+      text: userMessage,
       timestamp: getCurrentTime(),
     });
 
-    setShowChoices(false);
-    setAnswered(true);
+    // messages 배열에 추가
+    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(newMessages);
 
-    if (choice.isCorrect) {
-      // 정답
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/conversation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!response.ok) {
+        throw new Error('API 요청 실패');
+      }
+
+      const data = await response.json();
+
+      // AI 응답을 messages와 dialogueHistory에 추가
+      const aiMessage = { role: 'assistant', content: data.message };
+      setMessages([...newMessages, aiMessage]);
+
+      addDialogue({
+        sender: 'npc',
+        text: data.message,
+        timestamp: getCurrentTime(),
+      });
+
+      setTurnCount(data.turn_count);
+
+      // 실시간 피드백: 어색한 답변
+      if (data.is_awkward && !data.is_ending) {
+        setTimeout(() => {
+          addDialogue({
+            sender: 'npc',
+            text: '⚠️ 방금 답변이 조금 어색했어요! 판교어를 좀 더 자연스럽게 사용해보세요.',
+            timestamp: getCurrentTime(),
+          });
+        }, 1000);
+      }
+
+      // 대화 종료 처리
+      if (data.is_ending) {
+        setIsEnded(true);
+        handleConversationEnd(data.understood);
+      }
+    } catch (error) {
+      console.error('대화 오류:', error);
+      addDialogue({
+        sender: 'npc',
+        text: '응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.',
+        timestamp: getCurrentTime(),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConversationEnd = (understood) => {
+    if (understood) {
+      // 성공
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '완벽해요! 👏\n리소스(Resource)와 풀(Full)을 적절히 사용하셨네요!\n업무 우선순위를 명확히 하고, 소통하는 것이 중요합니다.',
+          text: '완벽해요! 👏\n판교어를 잘 이해하고 계시네요!',
           timestamp: getCurrentTime(),
         });
-      }, 1000);
-
-      setTimeout(() => {
-        addDialogue({
-          sender: 'npc',
-          text: '판교어 키워드도 잘 활용하셨어요:\n- 리소스: 자원, 인력\n- 풀: 가득 찬 상태\n- 디벨롭: 발전시키다\n- 공유: 정보를 나누다',
-          timestamp: getCurrentTime(),
-        });
-      }, 3000);
+      }, 2000);
 
       setTimeout(() => {
         addDialogue({
@@ -96,12 +155,11 @@ const Stage2 = () => {
           text: '업무 메일 작성할 때 유용한\n"메일 작성 도우미"를 드릴게요! 📧',
           timestamp: getCurrentTime(),
         });
-      }, 5500);
+      }, 4000);
 
       setTimeout(() => {
-        // 아이템 획득
         addItemToInventory(ITEMS.EMAIL_HELPER);
-      }, 7000);
+      }, 5500);
 
       setTimeout(() => {
         addDialogue({
@@ -109,63 +167,90 @@ const Stage2 = () => {
           text: '다음 단계로 이동할게요!',
           timestamp: getCurrentTime(),
         });
-      }, 8500);
+      }, 7000);
 
       setTimeout(() => {
         goToNextStage();
-      }, 10000);
+      }, 8500);
     } else {
-      // 오답
-      setTimeout(() => {
-        addDialogue({
-          sender: 'npc',
-          text: '음... 판교에서는 좀 더 구체적으로\n상황을 설명하는 게 좋아요! 😅',
-          timestamp: getCurrentTime(),
-        });
-      }, 1000);
+      // 실패 - 즉시 재시작
+      addDialogue({
+        sender: 'npc',
+        text: '음... 판교어 학습이 좀 더 필요할 것 같아요. 😅\n처음부터 다시 시작할게요!',
+        timestamp: getCurrentTime(),
+      });
 
       setTimeout(() => {
-        addDialogue({
-          sender: 'npc',
-          text: '힌트: "리소스", "풀", "디벨롭", "공유" 같은\n판교어를 사용해보세요!',
-          timestamp: getCurrentTime(),
-        });
-      }, 3000);
+        // 즉시 재시작
+        setIsEnded(false);
+        setMessages([]);
+        setTurnCount(0);
+        startConversation();
+      }, 2000);
+    }
+  };
 
-      setTimeout(() => {
-        addDialogue({
-          sender: 'npc',
-          text: '다시 선택해주세요!',
-          timestamp: getCurrentTime(),
-        });
-        setAnswered(false);
-        setShowChoices(true);
-      }, 5000);
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
   return (
     <ChatInterface>
-      {showChoices && !answered && (
-        <div className="space-y-3">
-          {choices.map((choice, index) => (
+      <div className="space-y-3">
+        {/* 진행 상태 */}
+        {!isEnded && turnCount > 0 && (
+          <div className="mb-2">
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+              <span>진행 상태</span>
+              <span>{turnCount}/5 턴</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-kakao-yellow rounded-full h-2 transition-all duration-300"
+                style={{ width: `${(turnCount / 5) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 입력 영역 */}
+        {!isEnded && (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="답변을 입력하세요..."
+              disabled={isLoading}
+              className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-kakao-yellow disabled:bg-gray-100 disabled:cursor-not-allowed"
+            />
             <motion.button
-              key={choice.id}
-              className="w-full bg-white hover:bg-kakao-yellow border-2 border-gray-200 hover:border-kakao-yellow rounded-xl px-4 py-3 text-left transition-all shadow-sm hover:shadow-md"
-              onClick={() => handleChoice(choice)}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
+              onClick={handleSend}
+              disabled={isLoading || !userInput.trim()}
+              className="px-6 py-3 bg-gradient-to-r from-kakao-yellow to-yellow-400 hover:from-yellow-400 hover:to-kakao-yellow text-kakao-brown font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-sm font-medium text-gray-800">
-                {choice.text}
-              </span>
+              {isLoading ? '⏳' : '전송'}
             </motion.button>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* 로딩 표시 */}
+        {isLoading && (
+          <motion.div
+            className="text-center text-sm text-gray-500"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            AI가 응답을 생성하고 있습니다...
+          </motion.div>
+        )}
+      </div>
     </ChatInterface>
   );
 };
