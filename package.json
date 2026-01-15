@@ -4,15 +4,16 @@
   "description": "신입 사원 온보딩을 위한 게이미피케이션 웹 서비스",
   "private": true,
   "dependencies": {
+    "framer-motion": "^10.16.4",
+    "papaparse": "^5.5.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "framer-motion": "^10.16.4"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "react-scripts": "5.0.1",
-    "tailwindcss": "^3.3.5",
+    "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
-    "autoprefixer": "^10.4.16"
+    "react-scripts": "5.0.1",
+    "tailwindcss": "^3.3.5"
   },
   "scripts": {
     "start": "react-scripts start",

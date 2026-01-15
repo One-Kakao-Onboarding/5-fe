@@ -3,6 +3,9 @@ import { useGame } from '../context/GameContext';
 import ProgressBar from './ProgressBar';
 import InventoryBar from './InventoryBar';
 import ItemRewardModal from './ItemRewardModal';
+import DictionaryModal from './DictionaryModal';
+import EmailTranslator from './EmailTranslator';
+import MagnifierTooltip from './MagnifierTooltip';
 import Stage1 from './stages/Stage1';
 import Stage2 from './stages/Stage2';
 import Stage3 from './stages/Stage3';
@@ -42,6 +45,15 @@ const GameContainer = () => {
 
       {/* 아이템 획득 모달 */}
       <ItemRewardModal />
+
+      {/* 판교어 사전 모달 */}
+      <DictionaryModal />
+
+      {/* 메일 번역기 모달 */}
+      <EmailTranslator />
+
+      {/* 판교어 돋보기 툴팁 */}
+      <MagnifierTooltip />
     </div>
   );
 };

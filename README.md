@@ -22,7 +22,11 @@
 - 화려한 아이템 획득 애니메이션
 
 ### 학습 콘텐츠
-- 판교어(IT 업계 은어) 사전
+- **판교어 사전**: 클릭 한 번으로 IT 업계 은어 검색
+- **메일 번역기**: AI 기반 판교어 ↔ 일반어 실시간 번역
+  - 판교어로 작성된 메일을 일반 한국어로 번역
+  - 일반 한국어를 판교어가 적절히 포함된 업무 메일로 변환
+- **판교어 돋보기**: 텍스트 선택 시 실시간 단어 설명
 - 실제 업무 상황 시뮬레이션
 - 즉각적인 피드백 시스템
 
@@ -88,7 +92,31 @@ npm start
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인합니다.
 
-### 3. 프로덕션 빌드
+### 3. API 키 설정 (메일 번역기 기능)
+
+메일 번역기 아이템 기능을 사용하려면 OpenAI API 키가 필요합니다.
+
+1. `.env.example` 파일을 복사하여 `.env` 파일을 생성:
+```bash
+cp .env.example .env
+```
+
+2. `.env` 파일을 열고 OpenAI API 키를 입력:
+```
+REACT_APP_OPENAI_API_KEY=sk-your-actual-api-key-here
+```
+
+3. OpenAI API 키 발급 방법:
+   - [OpenAI Platform](https://platform.openai.com/api-keys)에 접속
+   - 계정 생성 및 로그인
+   - API Keys 메뉴에서 새 키 생성
+   - 생성된 키를 `.env` 파일에 입력
+
+**참고**: API 키가 설정되지 않으면 메일 번역기 기능을 사용할 수 없지만, 다른 게임 기능은 정상적으로 작동합니다.
+
+**API 사용 비용**: OpenAI API는 사용량에 따라 과금됩니다. GPT-4o-mini 모델을 사용하여 비용을 최소화했습니다.
+
+### 4. 프로덕션 빌드
 
 ```bash
 npm run build

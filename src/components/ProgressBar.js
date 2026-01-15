@@ -14,7 +14,7 @@ const ProgressBar = () => {
   ];
 
   return (
-    <div className="w-full bg-white shadow-md px-6 py-4">
+    <div className="w-full bg-white shadow-md px-6 py-4 relative z-20">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           {stages.map((stage) => (

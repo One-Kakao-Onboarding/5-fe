@@ -18,6 +18,9 @@ export const GameProvider = ({ children }) => {
   const [dialogueHistory, setDialogueHistory] = useState([]);
   const [showItemModal, setShowItemModal] = useState(false);
   const [newItem, setNewItem] = useState(null);
+  const [showDictionaryModal, setShowDictionaryModal] = useState(false);
+  const [showEmailTranslator, setShowEmailTranslator] = useState(false);
+  const [magnifierData, setMagnifierData] = useState(null); // { word, position: { x, y } }
 
   // 대화 추가
   const addDialogue = useCallback((message) => {
@@ -59,6 +62,36 @@ export const GameProvider = ({ children }) => {
     return inventory.some(item => item.id === itemId);
   }, [inventory]);
 
+  // 사전 모달 열기
+  const openDictionary = useCallback(() => {
+    setShowDictionaryModal(true);
+  }, []);
+
+  // 사전 모달 닫기
+  const closeDictionary = useCallback(() => {
+    setShowDictionaryModal(false);
+  }, []);
+
+  // 메일 번역기 열기
+  const openEmailTranslator = useCallback(() => {
+    setShowEmailTranslator(true);
+  }, []);
+
+  // 메일 번역기 닫기
+  const closeEmailTranslator = useCallback(() => {
+    setShowEmailTranslator(false);
+  }, []);
+
+  // 돋보기 툴팁 표시
+  const showMagnifier = useCallback((word, position) => {
+    setMagnifierData({ word, position });
+  }, []);
+
+  // 돋보기 툴팁 숨기기
+  const hideMagnifier = useCallback(() => {
+    setMagnifierData(null);
+  }, []);
+
   const value = {
     currentStage,
     inventory,
@@ -66,6 +99,9 @@ export const GameProvider = ({ children }) => {
     dialogueHistory,
     showItemModal,
     newItem,
+    showDictionaryModal,
+    showEmailTranslator,
+    magnifierData,
     addDialogue,
     clearDialogue,
     addItemToInventory,
@@ -73,6 +109,12 @@ export const GameProvider = ({ children }) => {
     goToNextStage,
     completeTransition,
     hasItem,
+    openDictionary,
+    closeDictionary,
+    openEmailTranslator,
+    closeEmailTranslator,
+    showMagnifier,
+    hideMagnifier,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

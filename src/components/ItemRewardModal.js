@@ -76,7 +76,9 @@ const ItemRewardModal = () => {
                   repeatDelay: 1,
                 }}
               >
-                {newItem.icon}
+                <img
+                  src={newItem.icon}
+                />
               </motion.div>
 
               <h2 className="text-2xl font-bold text-kakao-brown mb-2">

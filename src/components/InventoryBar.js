@@ -3,11 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 
 const InventoryBar = () => {
-  const { inventory } = useGame();
+  const { inventory, openDictionary, openEmailTranslator } = useGame();
   const [hoveredItem, setHoveredItem] = useState(null);
 
+  // 아이템 클릭 핸들러
+  const handleItemClick = (item) => {
+    if (item.id === 'dictionary') {
+      openDictionary();
+    } else if (item.id === 'email_helper') {
+      openEmailTranslator();
+    }
+    // 추후 다른 아이템들의 기능 추가 가능
+  };
+
   return (
-    <div className="w-full bg-white border-t-2 border-gray-200 px-6 py-4">
+    <div className="w-full bg-white border-t-2 border-gray-200 px-6 py-4 relative z-20">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-kakao-brown">내 아이템</h3>
@@ -30,8 +40,11 @@ const InventoryBar = () => {
                     className="w-14 h-14 bg-kakao-yellow rounded-xl flex items-center justify-center text-3xl cursor-pointer shadow-md"
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => handleItemClick(item)}
                   >
-                    {item.icon}
+                    <img
+                      src={item.icon}
+                    />
                   </motion.div>
 
                   {/* 툴팁 */}

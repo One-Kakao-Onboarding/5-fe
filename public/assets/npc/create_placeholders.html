@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Placeholder Generator</title>
+</head>
+<body>
+    <canvas id="canvas" width="1920" height="1080"></canvas>
+    <script>
+        const stages = [
+            { num: 1, bg: '#FFE5E5', text: 'Stage 1\n팀장님', color: '#FF6B6B' },
+            { num: 2, bg: '#E5F5FF', text: 'Stage 2\n시니어 개발자', color: '#4ECDC4' },
+            { num: 3, bg: '#FFF5E5', text: 'Stage 3\nHR 담당자', color: '#FFB347' },
+            { num: 4, bg: '#F0E5FF', text: 'Stage 4\n프로젝트 리더', color: '#9B59B6' }
+        ];
+        
+        stages.forEach(stage => {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 배경
+            ctx.fillStyle = stage.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 캐릭터 위치 (왼쪽)
+            const charX = 400;
+            const charY = 500;
+            
+            // 캐릭터 원
+            ctx.fillStyle = stage.color;
+            ctx.beginPath();
+            ctx.arc(charX, charY, 150, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 텍스트
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('👤', charX, charY + 20);
+            
+            ctx.fillStyle = stage.color;
+            ctx.font = 'bold 48px Arial';
+            const lines = stage.text.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, canvas.width / 2, 200 + i * 60);
+            });
+            
+            // 다운로드
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `stage${stage.num}.png`;
+                a.click();
+            });
+        });
+    </script>
+</body>
+</html>

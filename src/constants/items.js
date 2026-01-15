@@ -1,23 +1,26 @@
+// 판교어 사전 데이터 import
+import pangyoDictionaryData from '../data/pangyo_dictionary.json';
+
 // 게임 내 아이템 정보
 export const ITEMS = {
   DICTIONARY: {
     id: 'dictionary',
     name: '판교어 기초 단어 사전',
-    icon: '📚',
+    icon: '/assets/icon/dictionary.png',
     description: '기본적인 판교어를 확인할 수 있는 사전',
     stage: 1
   },
   EMAIL_HELPER: {
     id: 'email_helper',
-    name: '메일 작성 도우미',
-    icon: '📧',
+    name: '판교어 번역기',
+    icon: '/assets/icon/translator.png',
     description: '업무 메일 작성을 도와주는 도구',
     stage: 2
   },
   MAGNIFIER: {
     id: 'magnifier',
     name: '판교어 돋보기',
-    icon: '🔍',
+    icon: '/assets/icon/magnifier.png',
     description: '판교어에 마우스를 올리면 뜻을 알려주는 도구',
     stage: 3
   },
@@ -30,72 +33,25 @@ export const ITEMS = {
   }
 };
 
-// 판교어 사전 데이터
-export const PANGYO_DICTIONARY = {
-  '인비': {
-    word: '인비',
-    full: 'Invitation',
-    meaning: '초대장, 미팅 초대',
-    example: '회의 인비 보내드릴게요!'
-  },
-  '리소스': {
-    word: '리소스',
-    full: 'Resource',
-    meaning: '자원, 인력',
-    example: '현재 리소스가 부족해서 다음 주에 시작 가능합니다.'
-  },
-  '풀': {
-    word: '풀',
-    full: 'Full',
-    meaning: '가득 찬, 여유가 없는',
-    example: '이번 주는 스케줄이 풀이라서 어려워요.'
-  },
-  '디벨롭': {
-    word: '디벨롭',
-    full: 'Develop',
-    meaning: '개발하다, 발전시키다',
-    example: '이 아이디어를 좀 더 디벨롭해볼까요?'
-  },
-  '공유': {
-    word: '공유',
-    full: 'Share',
-    meaning: '정보나 파일을 나누다',
-    example: '해당 문서 공유 부탁드립니다.'
-  },
-  '얼라인': {
-    word: '얼라인',
-    full: 'Align',
-    meaning: '맞추다, 조율하다',
-    example: '팀원들과 먼저 얼라인해야 할 것 같아요.'
-  },
-  '오프': {
-    word: '오프',
-    full: 'Off',
-    meaning: '휴가, 쉬는 날',
-    example: '다음 주 월요일 오프 쓸게요.'
-  },
-  '백업': {
-    word: '백업',
-    full: 'Backup',
-    meaning: '대리, 대체자',
-    example: '제 백업은 김 대리님입니다.'
-  },
-  '슬랙': {
-    word: '슬랙',
-    full: 'Slack',
-    meaning: '팀 협업 메신저',
-    example: '슬랙으로 연락 주세요.'
-  },
-  '대응': {
-    word: '대응',
-    full: 'Response',
-    meaning: '응답하다, 처리하다',
-    example: '긴급 상황 발생 시 대응 가능합니다.'
-  },
-  '회고': {
-    word: '회고',
-    full: 'Retrospective',
-    meaning: '프로젝트 후 반성과 개선점 논의',
-    example: '이번 스프린트 회고를 진행하겠습니다.'
+// 판교어 사전 데이터 (리스트 형식)
+// 각 항목은 { term, category, definition, example, keywords } 구조
+export const PANGYO_DICTIONARY_LIST = pangyoDictionaryData;
+
+// 카테고리별로 그룹화된 판교어 사전
+export const PANGYO_DICTIONARY_BY_CATEGORY = pangyoDictionaryData.reduce((acc, item) => {
+  const category = item.category || '기타';
+  if (!acc[category]) {
+    acc[category] = [];
   }
-};
+  acc[category].push(item);
+  return acc;
+}, {});
+
+// 용어명으로 빠르게 검색할 수 있는 맵 형식
+export const PANGYO_DICTIONARY_MAP = pangyoDictionaryData.reduce((acc, item) => {
+  acc[item.term] = item;
+  return acc;
+}, {});
+
+// 전체 카테고리 목록
+export const DICTIONARY_CATEGORIES = [...new Set(pangyoDictionaryData.map(item => item.category))].sort();
