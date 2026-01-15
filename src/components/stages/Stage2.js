@@ -5,17 +5,17 @@ import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
 // API 서버 주소
-const API_BASE_URL = 'http://192.168.8.204:8000';
+const API_BASE_URL = 'https://five-be.onrender.com';
 
 const Stage2 = () => {
-  const { addDialogue, addItemToInventory, goToNextStage } = useGame();
+  const { addDialogue, addItemToInventory, goToNextStage, returnToMain, isPracticeMode } = useGame();
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [isEnded, setIsEnded] = useState(false);
-  const [turnCount, setTurnCount] = useState(0);
   const hasStarted = useRef(false); // 중복 호출 방지
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 컴포넌트 마운트 시 한 번만 대화 시작
     if (!hasStarted.current) {
@@ -53,8 +53,6 @@ const Stage2 = () => {
         text: data.message,
         timestamp: getCurrentTime(),
       });
-
-      setTurnCount(data.turn_count);
     } catch (error) {
       console.error('대화 시작 오류:', error);
       addDialogue({
@@ -112,8 +110,6 @@ const Stage2 = () => {
         timestamp: getCurrentTime(),
       });
 
-      setTurnCount(data.turn_count);
-
       // 대화 종료 처리
       if (data.is_ending) {
         setIsEnded(true);
@@ -157,13 +153,17 @@ const Stage2 = () => {
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '다음 단계로 이동할게요!',
+          text: isPracticeMode ? '수고하셨습니다! 메인으로 돌아갑니다.' : '다음 단계로 이동할게요!',
           timestamp: getCurrentTime(),
         });
       }, 7000);
 
       setTimeout(() => {
-        goToNextStage();
+        if (isPracticeMode) {
+          returnToMain();
+        } else {
+          goToNextStage();
+        }
       }, 8500);
     } else {
       // 실패 - 즉시 재시작
@@ -177,7 +177,6 @@ const Stage2 = () => {
         // 즉시 재시작
         setIsEnded(false);
         setMessages([]);
-        setTurnCount(0);
         startConversation();
       }, 2000);
     }

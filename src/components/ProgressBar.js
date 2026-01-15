@@ -10,7 +10,7 @@ const ProgressBar = () => {
     { number: 1, label: '입사' },
     { number: 2, label: '업무' },
     { number: 3, label: '휴가' },
-    { number: 4, label: '회고' },
+    { number: 4, label: '회의' },
   ];
 
   return (

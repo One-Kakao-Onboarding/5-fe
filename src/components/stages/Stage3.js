@@ -5,7 +5,7 @@ import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
 const Stage3 = () => {
-  const { addDialogue, addItemToInventory, goToNextStage, openEmailTranslator } = useGame();
+  const { addDialogue, addItemToInventory, goToNextStage, returnToMain, isPracticeMode, openEmailTranslator } = useGame();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [emailContent, setEmailContent] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -107,13 +107,17 @@ const Stage3 = () => {
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '마지막 단계로 이동합니다!',
+          text: isPracticeMode ? '수고하셨습니다! 메인으로 돌아갑니다.' : '마지막 단계로 이동합니다!',
           timestamp: getCurrentTime(),
         });
       }, 8500);
 
       setTimeout(() => {
-        goToNextStage();
+        if (isPracticeMode) {
+          returnToMain();
+        } else {
+          goToNextStage();
+        }
       }, 10000);
     } else {
       // 실패

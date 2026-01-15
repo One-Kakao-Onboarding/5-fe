@@ -52,6 +52,7 @@ export const GameProvider = ({ children }) => {
   const [showEmailTranslator, setShowEmailTranslator] = useState(false);
   const [magnifierData, setMagnifierData] = useState(null); // { word, position: { x, y } }
   const [showStartVideo, setShowStartVideo] = useState(false);
+  const [isPracticeMode, setIsPracticeMode] = useState(false); // 연습 모드 플래그
 
   // 인벤토리가 변경될 때마다 localStorage에 저장
   useEffect(() => {
@@ -163,9 +164,16 @@ export const GameProvider = ({ children }) => {
     setMagnifierData(null);
   }, []);
 
-  // 게임 시작 (start.mp4 비디오 표시)
+  // 게임 시작 (start.mp4 비디오 표시) - 일반 모드
   const startGame = useCallback(() => {
+    setIsPracticeMode(false);
     setShowStartVideo(true);
+  }, []);
+
+  // 연습 모드 시작 (비디오 없이 바로 시작)
+  const startPracticeMode = useCallback(() => {
+    setIsPracticeMode(true);
+    setGameStarted(true);
   }, []);
 
   // start 비디오 완료 후 게임 시작
@@ -188,21 +196,24 @@ export const GameProvider = ({ children }) => {
 
   // 메인 화면으로 돌아가기
   const returnToMain = useCallback(() => {
-    // 현재 스테이지를 완료 목록에 추가 (Stage 4 클리어 시)
-    setCompletedStages((prev) => {
-      const stage = currentStage;
-      if (!prev.includes(stage)) {
-        return [...prev, stage];
-      }
-      return prev;
-    });
+    // 연습 모드가 아닐 때만 스테이지를 완료 목록에 추가
+    if (!isPracticeMode) {
+      setCompletedStages((prev) => {
+        const stage = currentStage;
+        if (!prev.includes(stage)) {
+          return [...prev, stage];
+        }
+        return prev;
+      });
+    }
 
     setGameStarted(false);
     setCurrentStage(1);
     setDialogueHistory([]);
     setShowStartVideo(false);
     setIsTransitioning(false);
-  }, [currentStage]);
+    setIsPracticeMode(false);
+  }, [currentStage, isPracticeMode]);
 
   const value = {
     gameStarted,
@@ -217,6 +228,7 @@ export const GameProvider = ({ children }) => {
     showEmailTranslator,
     magnifierData,
     showStartVideo,
+    isPracticeMode,
     addDialogue,
     clearDialogue,
     addItemToInventory,
@@ -231,6 +243,7 @@ export const GameProvider = ({ children }) => {
     showMagnifier,
     hideMagnifier,
     startGame,
+    startPracticeMode,
     completeStartVideo,
     setStage,
     hasCompletedAllStages,

@@ -5,17 +5,17 @@ import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
 // API 서버 주소
-const API_BASE_URL = 'http://192.168.8.204:8000';
+const API_BASE_URL = 'https://five-be.onrender.com';
 
 const Stage1 = () => {
-  const { addDialogue, addItemToInventory, goToNextStage } = useGame();
+  const { addDialogue, addItemToInventory, goToNextStage, returnToMain, isPracticeMode } = useGame();
   const [conversation, setConversation] = useState(null);
   const [showChoices, setShowChoices] = useState(false);
-  const [selectedChoice, setSelectedChoice] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const hasStarted = useRef(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 컴포넌트 마운트 시 한 번만 대화 생성
     if (!hasStarted.current) {
@@ -86,7 +86,6 @@ const Stage1 = () => {
   const handleChoice = (choiceIndex) => {
     if (answered) return;
 
-    setSelectedChoice(choiceIndex);
     const choiceText = conversation.choices[choiceIndex];
 
     // 사용자 응답 추가
@@ -151,13 +150,17 @@ const Stage1 = () => {
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '다음 단계로 넘어가볼까요?',
+          text: isPracticeMode ? '수고하셨습니다! 메인으로 돌아갑니다.' : '다음 단계로 넘어가볼까요?',
           timestamp: getCurrentTime(),
         });
       }, 8000 + conversation.dialogue_after.length * 1500);
 
       setTimeout(() => {
-        goToNextStage();
+        if (isPracticeMode) {
+          returnToMain();
+        } else {
+          goToNextStage();
+        }
       }, 9500 + conversation.dialogue_after.length * 1500);
 
     } else {
@@ -186,7 +189,6 @@ const Stage1 = () => {
           timestamp: getCurrentTime(),
         });
         setAnswered(false);
-        setSelectedChoice(null);
         setShowChoices(true);
       }, 5000);
     }

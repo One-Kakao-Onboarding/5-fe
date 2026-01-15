@@ -6,13 +6,20 @@ import EmailTranslator from './EmailTranslator';
 const MainScreen = () => {
   const {
     startGame,
+    startPracticeMode,
     setStage,
     inventory,
-    hasItem,
     openDictionary,
     openEmailTranslator,
     hasCompletedAllStages,
   } = useGame();
+
+  const stageTexts = {
+    1: "선택지 고르기",
+    2: "대화하기",
+    3: "메일 작성",
+    4: "회의록 작성",
+  };
 
   const allStagesCompleted = hasCompletedAllStages();
 
@@ -23,8 +30,9 @@ const MainScreen = () => {
   };
 
   const handleStageSelect = (stage) => {
+    // 연습 모드로 선택한 스테이지 시작
     setStage(stage);
-    startGame();
+    startPracticeMode();
   };
 
   return (
@@ -67,7 +75,7 @@ const MainScreen = () => {
                 whileTap={{ scale: 0.95 }}
                 title={item.name}
               >
-                <img src={item.icon}></img>
+                <img src={item.icon} alt={item.name} />
               </motion.button>
             ))}
           </motion.div>
@@ -135,7 +143,11 @@ const MainScreen = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      Stage {stage}
+                      {/* Stage 번호 - 크고 두껍게 */}
+                      <div className="text-xl font-bold">Stage {stage}</div>
+                      
+                      {/* 스테이지 설명 - 조금 작게, 위쪽과 간격 */}
+                      <div className="text-sm mt-1">{stageTexts[stage]}</div>
                     </motion.button>
                   ))}
                 </div>

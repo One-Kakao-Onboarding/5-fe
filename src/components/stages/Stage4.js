@@ -5,7 +5,7 @@ import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
 // API 서버 주소
-const API_BASE_URL = 'http://192.168.8.204:8000';
+const API_BASE_URL = 'https://five-be.onrender.com';
 
 const Stage4 = () => {
   const { addDialogue, addItemToInventory, returnToMain } = useGame();
@@ -19,6 +19,7 @@ const Stage4 = () => {
   const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const hasStarted = useRef(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 컴포넌트 마운트 시 한 번만 회의 생성
     if (!hasStarted.current) {

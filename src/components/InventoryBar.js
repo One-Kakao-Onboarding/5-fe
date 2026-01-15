@@ -44,6 +44,7 @@ const InventoryBar = () => {
                   >
                     <img
                       src={item.icon}
+                      alt={item.name}
                     />
                   </motion.div>
 

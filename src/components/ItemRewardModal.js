@@ -78,6 +78,7 @@ const ItemRewardModal = () => {
               >
                 <img
                   src={newItem.icon}
+                  alt={newItem.name}
                 />
               </motion.div>
 

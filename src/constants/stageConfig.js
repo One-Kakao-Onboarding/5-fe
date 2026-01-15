@@ -28,7 +28,7 @@ export const STAGE_CONFIG = {
     bubblePosition: 'right',
   },
   4: {
-    title: '프로젝트 회고',
+    title: '프로젝트 회의',
     npcName: '프로젝트 리더',
     npcPosition: {
       x: '20%',

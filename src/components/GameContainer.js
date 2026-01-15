@@ -1,6 +1,5 @@
 import React from 'react';
 import { useGame } from '../context/GameContext';
-import ProgressBar from './ProgressBar';
 import InventoryBar from './InventoryBar';
 import ItemRewardModal from './ItemRewardModal';
 import DictionaryModal from './DictionaryModal';
@@ -33,7 +32,6 @@ const GameContainer = () => {
   return (
     <div className="h-screen flex flex-col bg-kakao-lightGray">
       {/* 상단: 진행 상황 바 */}
-      <ProgressBar />
 
       {/* 중앙: 채팅 인터페이스 */}
       <div className="flex-1 overflow-hidden">

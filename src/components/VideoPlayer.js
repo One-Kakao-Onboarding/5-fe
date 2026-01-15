@@ -18,7 +18,7 @@ const STAGE_TRANSITIONS = {
   3: {
     title: 'Project Complete',
     subtitle: '프로젝트 완료! 성공적으로 휴가 준비를 마쳤습니다.',
-    nextStage: '이제 마지막 회고만 남았습니다...',
+    nextStage: '이제 마지막 회의만 남았습니다...',
     video: '/assets/video/stage-clear.mp4',
   },
   4: {

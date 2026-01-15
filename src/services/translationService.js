@@ -1,6 +1,6 @@
 // 판교어 번역 서비스
 // API 서버 주소
-const API_BASE_URL = 'http://192.168.8.204:8000';
+const API_BASE_URL = 'https://five-be.onrender.com';
 
 /**
  * 판교어 변환 API를 사용한 번역
