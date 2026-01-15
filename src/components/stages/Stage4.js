@@ -16,6 +16,7 @@ const Stage4 = () => {
   const [submitted, setSubmitted] = useState(false);
   const [showEnding, setShowEnding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFormCollapsed, setIsFormCollapsed] = useState(false);
   const hasStarted = useRef(false);
 
   useEffect(() => {
@@ -272,49 +273,47 @@ const Stage4 = () => {
       )}
 
       {showMinutesForm && !submitted && meeting && (
-        <motion.form
-          onSubmit={handleSubmit}
-          className="space-y-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-            <h4 className="text-sm font-bold text-blue-800 mb-2">💡 힌트</h4>
-            <p className="text-xs text-blue-700">
-              회의록에는 회의 주제, 핵심 내용, 판교어 정의, 액션 아이템 등을 포함하세요!
-            </p>
-            <details className="mt-2">
-              <summary className="text-xs font-semibold text-blue-800 cursor-pointer">
-                사용된 판교어 ({meeting.used_terms.length}개)
-              </summary>
-              <ul className="text-xs text-blue-700 mt-2 space-y-1">
-                {meeting.used_terms.map((term, idx) => (
-                  <li key={idx}>
-                    • <strong>{term.용어}</strong>: {term.정의}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          </div>
-
-          <textarea
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-kakao-yellow resize-none"
-            rows="10"
-            placeholder="회의록을 작성하세요...&#10;&#10;예시:&#10;회의 제목: ...&#10;일시: ...&#10;참석자: ...&#10;&#10;논의 내용:&#10;1. ...&#10;&#10;결정 사항:&#10;- ...&#10;&#10;액션 아이템:&#10;- ..."
-            value={minutesContent}
-            onChange={(e) => setMinutesContent(e.target.value)}
-          />
-
+        <div className="space-y-3">
+          {/* 접기/펼치기 버튼 */}
           <motion.button
-            type="submit"
-            className="w-full bg-kakao-yellow hover:bg-yellow-400 text-kakao-brown font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            disabled={!minutesContent.trim()}
+            type="button"
+            onClick={() => setIsFormCollapsed(!isFormCollapsed)}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-xl transition-colors text-sm flex items-center justify-between"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
           >
-            회의록 제출하기 ✍️
+            <span>{isFormCollapsed ? '입력창 펼치기 ▼' : '입력창 접기 ▲'}</span>
+            <span className="text-xs text-gray-500">대화 내용 보기</span>
           </motion.button>
-        </motion.form>
+
+          {!isFormCollapsed && (
+            <motion.form
+              onSubmit={handleSubmit}
+              className="space-y-3"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <textarea
+                className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-kakao-yellow resize-none"
+                rows="10"
+                placeholder="회의록을 작성하세요...&#10;&#10;예시:&#10;회의 제목: ...&#10;일시: ...&#10;참석자: ...&#10;&#10;논의 내용:&#10;1. ...&#10;&#10;결정 사항:&#10;- ...&#10;&#10;액션 아이템:&#10;- ..."
+                value={minutesContent}
+                onChange={(e) => setMinutesContent(e.target.value)}
+              />
+
+              <motion.button
+                type="submit"
+                className="w-full bg-kakao-yellow hover:bg-yellow-400 text-kakao-brown font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={!minutesContent.trim()}
+              >
+                회의록 제출하기 ✍️
+              </motion.button>
+            </motion.form>
+          )}
+        </div>
       )}
 
       {showEnding && (

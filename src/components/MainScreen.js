@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import DictionaryModal from './DictionaryModal';
@@ -15,18 +14,12 @@ const MainScreen = () => {
     hasCompletedAllStages,
   } = useGame();
 
-  const [showStageSelect, setShowStageSelect] = useState(false);
   const allStagesCompleted = hasCompletedAllStages();
 
   const handleStartGame = () => {
-    if (allStagesCompleted) {
-      // 모든 스테이지 완료 시 스테이지 선택 UI 표시
-      setShowStageSelect(true);
-    } else {
-      // 첫 플레이 시 바로 Stage 1부터 시작
-      setStage(1);
-      startGame();
-    }
+    // 첫 플레이 시 바로 Stage 1부터 시작
+    setStage(1);
+    startGame();
   };
 
   const handleStageSelect = (stage) => {
@@ -74,7 +67,7 @@ const MainScreen = () => {
                 whileTap={{ scale: 0.95 }}
                 title={item.name}
               >
-                {item.icon}
+                <img src={item.icon}></img>
               </motion.button>
             ))}
           </motion.div>
@@ -89,37 +82,45 @@ const MainScreen = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <h1 className="text-6xl font-bold text-white mb-4 drop-shadow-2xl">
-              판교 생존기
-            </h1>
-            <p className="text-2xl text-white/90 drop-shadow-lg">
-              당신의 판교 생활을 시작해보세요
-            </p>
           </motion.div>
 
-          {/* 게임 시작 버튼 */}
+          {/* 게임 시작 버튼 또는 스테이지 선택 */}
           <AnimatePresence mode="wait">
-            {!showStageSelect ? (
+            {!allStagesCompleted ? (
+              // 모든 스테이지 클리어 전: 게임 시작 버튼만 표시
               <motion.button
-                className="px-12 py-5 bg-kakao-yellow text-kakao-brown text-2xl font-bold rounded-full shadow-2xl hover:bg-yellow-400 transition-all duration-300"
-                onClick={handleStartGame}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                whileHover={{ scale: 1.1, rotate: 2 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {allStagesCompleted ? '연습 모드' : '게임 시작'}
-              </motion.button>
+            key="start-button"
+            className="
+              fixed
+              bottom-20
+              px-12 py-5
+              bg-kakao-yellow text-kakao-brown
+              text-2xl font-bold
+              rounded-full shadow-2xl
+              hover:bg-yellow-400
+              transition-all duration-300
+            "
+            onClick={handleStartGame}
+            initial={{ opacity: 0, scale: 0.8, y: 40 }}
+            animate={{ opacity: 1, scale: 1, y: 40 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            whileHover={{ scale: 1.1, rotate: 2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            게임 시작
+          </motion.button>
             ) : (
+              // 모든 스테이지 클리어 후: 스테이지 선택 버튼 바로 표시
               <motion.div
+                key="stage-select"
                 className="space-y-4"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
               >
-                <p className="text-white text-xl font-semibold text-center mb-6">
+                <p className="text-white text-xl font-semibold text-center mb-6 drop-shadow-lg">
                   연습할 스테이지를 선택하세요
                 </p>
                 <div className="grid grid-cols-2 gap-4">
@@ -130,7 +131,7 @@ const MainScreen = () => {
                       onClick={() => handleStageSelect(stage)}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: stage * 0.1 }}
+                      transition={{ delay: 0.7 + stage * 0.1 }}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
@@ -138,20 +139,12 @@ const MainScreen = () => {
                     </motion.button>
                   ))}
                 </div>
-                <motion.button
-                  className="w-full mt-4 px-6 py-3 bg-white/50 text-white text-sm font-semibold rounded-xl hover:bg-white/70 transition-all"
-                  onClick={() => setShowStageSelect(false)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  뒤로 가기
-                </motion.button>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* 애니메이션 효과 - 펄스 */}
-          {!showStageSelect && (
+          {!allStagesCompleted && (
             <motion.div
               className="absolute bottom-20 text-white/70 text-sm"
               animate={{ opacity: [0.5, 1, 0.5] }}
@@ -161,70 +154,6 @@ const MainScreen = () => {
             </motion.div>
           )}
         </div>
-
-      {/* 데코레이션 요소들 */}
-      <motion.div
-        className="absolute top-10 left-10 text-6xl"
-        animate={{
-          y: [0, -20, 0],
-          rotate: [0, 10, 0],
-        }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      >
-        💼
-      </motion.div>
-
-      <motion.div
-        className="absolute top-20 right-20 text-5xl"
-        animate={{
-          y: [0, 20, 0],
-          rotate: [0, -10, 0],
-        }}
-        transition={{
-          duration: 2.5,
-          repeat: Infinity,
-          ease: 'easeInOut',
-          delay: 0.5,
-        }}
-      >
-        💻
-      </motion.div>
-
-      <motion.div
-        className="absolute bottom-32 left-20 text-5xl"
-        animate={{
-          y: [0, -15, 0],
-          x: [0, 10, 0],
-        }}
-        transition={{
-          duration: 2.8,
-          repeat: Infinity,
-          ease: 'easeInOut',
-          delay: 1,
-        }}
-      >
-        📱
-      </motion.div>
-
-      <motion.div
-        className="absolute bottom-40 right-32 text-6xl"
-        animate={{
-          y: [0, 15, 0],
-          x: [0, -10, 0],
-        }}
-        transition={{
-          duration: 3.2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-          delay: 0.8,
-        }}
-      >
-        ☕
-      </motion.div>
       </div>
 
       {/* 모달들 */}

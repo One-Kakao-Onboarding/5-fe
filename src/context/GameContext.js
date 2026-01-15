@@ -188,12 +188,21 @@ export const GameProvider = ({ children }) => {
 
   // 메인 화면으로 돌아가기
   const returnToMain = useCallback(() => {
+    // 현재 스테이지를 완료 목록에 추가 (Stage 4 클리어 시)
+    setCompletedStages((prev) => {
+      const stage = currentStage;
+      if (!prev.includes(stage)) {
+        return [...prev, stage];
+      }
+      return prev;
+    });
+
     setGameStarted(false);
     setCurrentStage(1);
     setDialogueHistory([]);
     setShowStartVideo(false);
     setIsTransitioning(false);
-  }, []);
+  }, [currentStage]);
 
   const value = {
     gameStarted,

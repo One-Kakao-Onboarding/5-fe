@@ -183,7 +183,7 @@ const Stage2 = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -193,22 +193,6 @@ const Stage2 = () => {
   return (
     <ChatInterface>
       <div className="space-y-3">
-        {/* 진행 상태 */}
-        {!isEnded && turnCount > 0 && (
-          <div className="mb-2">
-            <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-              <span>진행 상태</span>
-              <span>{turnCount}/5 턴</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-kakao-yellow rounded-full h-2 transition-all duration-300"
-                style={{ width: `${(turnCount / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* 입력 영역 */}
         {!isEnded && (
           <div className="flex gap-2">
@@ -216,7 +200,7 @@ const Stage2 = () => {
               type="text"
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="답변을 입력하세요..."
               disabled={isLoading}
               className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-kakao-yellow disabled:bg-gray-100 disabled:cursor-not-allowed"

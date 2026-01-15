@@ -27,7 +27,7 @@ export const ITEMS = {
   WELCOME_KIT: {
     id: 'welcome_kit',
     name: '판교 생존 웰컴 키트',
-    icon: '🎁',
+    icon: '/assets/icon/certificate.png',
     description: '판교 생존에 필요한 모든 것이 담긴 키트',
     stage: 4
   }
