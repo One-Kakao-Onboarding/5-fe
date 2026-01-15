@@ -12,6 +12,7 @@ export const useGame = () => {
 
 export const GameProvider = ({ children }) => {
   // 전역 상태
+  const [gameStarted, setGameStarted] = useState(false);
   const [currentStage, setCurrentStage] = useState(1);
   const [inventory, setInventory] = useState([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -92,7 +93,13 @@ export const GameProvider = ({ children }) => {
     setMagnifierData(null);
   }, []);
 
+  // 게임 시작
+  const startGame = useCallback(() => {
+    setGameStarted(true);
+  }, []);
+
   const value = {
+    gameStarted,
     currentStage,
     inventory,
     isTransitioning,
@@ -115,6 +122,7 @@ export const GameProvider = ({ children }) => {
     closeEmailTranslator,
     showMagnifier,
     hideMagnifier,
+    startGame,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
