@@ -1,84 +1,152 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../context/GameContext';
 import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
+// API 서버 주소
+const API_BASE_URL = 'http://192.168.8.204:8000';
+
 const Stage1 = () => {
   const { addDialogue, addItemToInventory, goToNextStage } = useGame();
+  const [conversation, setConversation] = useState(null);
   const [showChoices, setShowChoices] = useState(false);
+  const [selectedChoice, setSelectedChoice] = useState(null);
   const [answered, setAnswered] = useState(false);
-
-  const choices = [
-    { id: 1, text: '네, 참석하겠습니다!', isCorrect: false },
-    { id: 2, text: '그럼 인비(Invitation) 보내주세요~', isCorrect: true },
-    { id: 3, text: '2시요? 알겠습니다.', isCorrect: false },
-  ];
+  const [isLoading, setIsLoading] = useState(true);
+  const hasStarted = useRef(false);
 
   useEffect(() => {
-    // 초기 NPC 대화
-    const timer1 = setTimeout(() => {
+    // 컴포넌트 마운트 시 한 번만 대화 생성
+    if (!hasStarted.current) {
+      hasStarted.current = true;
+      generateConversation();
+    }
+  }, []);
+
+  const generateConversation = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/generate-choice-conversation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (!response.ok) {
+        throw new Error('대화 생성 실패');
+      }
+
+      const data = await response.json();
+      setConversation(data);
+
+      // 상황 설명 추가
+      setTimeout(() => {
+        addDialogue({
+          sender: 'npc',
+          text: `안녕하세요! 오늘 첫 출근이시네요. 환영합니다! 👋\n\n📝 ${data.context}`,
+          timestamp: getCurrentTime(),
+        });
+      }, 500);
+
+      // dialogue_before 추가
+      data.dialogue_before.forEach((msg, index) => {
+        setTimeout(() => {
+          addDialogue({
+            sender: msg.speaker === '나' ? 'user' : 'npc',
+            text: msg.message,
+            timestamp: getCurrentTime(),
+          });
+        }, 1500 + index * 1500);
+      });
+
+      // 선택지 표시
+      setTimeout(() => {
+        setShowChoices(true);
+        setIsLoading(false);
+      }, 1500 + data.dialogue_before.length * 1500);
+
+    } catch (error) {
+      console.error('대화 생성 오류:', error);
+      setIsLoading(false);
+
+      // 에러 시 폴백 메시지
       addDialogue({
         sender: 'npc',
-        text: '안녕하세요! 오늘 첫 출근이시네요. 환영합니다! 👋',
+        text: '대화를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         timestamp: getCurrentTime(),
       });
-    }, 500);
+    }
+  };
 
-    const timer2 = setTimeout(() => {
-      addDialogue({
-        sender: 'npc',
-        text: '아, 그리고 오늘 오후 2시에 팀 미팅이 있는데요,\n참석 가능하신가요?',
-        timestamp: getCurrentTime(),
-      });
-    }, 2000);
-
-    const timer3 = setTimeout(() => {
-      setShowChoices(true);
-    }, 3500);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
-  }, [addDialogue]);
-
-  const handleChoice = (choice) => {
+  const handleChoice = (choiceIndex) => {
     if (answered) return;
+
+    setSelectedChoice(choiceIndex);
+    const choiceText = conversation.choices[choiceIndex];
 
     // 사용자 응답 추가
     addDialogue({
       sender: 'user',
-      text: choice.text,
+      text: choiceText,
       timestamp: getCurrentTime(),
     });
 
     setShowChoices(false);
     setAnswered(true);
 
-    if (choice.isCorrect) {
-      // 정답
+    const isCorrect = choiceIndex === conversation.correct_choice_index;
+
+    if (isCorrect) {
+      // 정답 - 설명 표시
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '오! 벌써 판교어를 알고 계시네요! 😊\n"인비(Invitation)"는 회의 초대를 의미합니다.\n방금 캘린더에 인비 보내드렸어요!',
+          text: `✅ 정답입니다!\n\n💡 ${conversation.explanation}`,
           timestamp: getCurrentTime(),
         });
       }, 1000);
 
+      // dialogue_after 표시
+      conversation.dialogue_after.forEach((msg, index) => {
+        setTimeout(() => {
+          addDialogue({
+            sender: msg.speaker === '나' ? 'user' : 'npc',
+            text: msg.message,
+            timestamp: getCurrentTime(),
+          });
+        }, 3000 + index * 1500);
+      });
+
+      // 사용된 판교어 표시
+      setTimeout(() => {
+        const termsText = conversation.used_terms
+          .map(term => `• ${term.용어}: ${term.정의}`)
+          .join('\n');
+
+        addDialogue({
+          sender: 'npc',
+          text: `📚 사용된 판교어:\n\n${termsText}`,
+          timestamp: getCurrentTime(),
+        });
+      }, 3000 + conversation.dialogue_after.length * 1500);
+
+      // 아이템 획득
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '첫 출근부터 훌륭하세요!\n이 판교어 기초 단어 사전을 드릴게요. 📚',
+          text: '첫 출근부터 훌륭하세요!\n판교어 기초 단어 사전을 드릴게요. 📚',
           timestamp: getCurrentTime(),
         });
-      }, 3000);
+      }, 5000 + conversation.dialogue_after.length * 1500);
 
       setTimeout(() => {
-        // 아이템 획득
         addItemToInventory(ITEMS.DICTIONARY);
-      }, 4500);
+      }, 6500 + conversation.dialogue_after.length * 1500);
 
       setTimeout(() => {
         addDialogue({
@@ -86,20 +154,30 @@ const Stage1 = () => {
           text: '다음 단계로 넘어가볼까요?',
           timestamp: getCurrentTime(),
         });
-      }, 6000);
+      }, 8000 + conversation.dialogue_after.length * 1500);
 
       setTimeout(() => {
         goToNextStage();
-      }, 7500);
+      }, 9500 + conversation.dialogue_after.length * 1500);
+
     } else {
-      // 오답
+      // 오답 - 정답 설명과 함께 재시도
       setTimeout(() => {
         addDialogue({
           sender: 'npc',
-          text: '음... 회의에 참석하려면 캘린더 초대가 필요해요.\n판교에서는 "인비(Invitation)"라고 부른답니다! 😅',
+          text: `❌ 아쉽지만 다시 생각해보세요!\n\n💡 힌트: ${conversation.explanation}`,
           timestamp: getCurrentTime(),
         });
       }, 1000);
+
+      setTimeout(() => {
+        const correctAnswer = conversation.choices[conversation.correct_choice_index];
+        addDialogue({
+          sender: 'npc',
+          text: `✅ 정답: "${correctAnswer}"`,
+          timestamp: getCurrentTime(),
+        });
+      }, 3000);
 
       setTimeout(() => {
         addDialogue({
@@ -108,20 +186,31 @@ const Stage1 = () => {
           timestamp: getCurrentTime(),
         });
         setAnswered(false);
+        setSelectedChoice(null);
         setShowChoices(true);
-      }, 3000);
+      }, 5000);
     }
   };
 
   return (
     <ChatInterface>
-      {showChoices && !answered && (
+      {isLoading && (
+        <motion.div
+          className="text-center text-sm text-gray-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          대화를 생성하고 있습니다...
+        </motion.div>
+      )}
+
+      {showChoices && !answered && conversation && (
         <div className="space-y-3">
-          {choices.map((choice, index) => (
+          {conversation.choices.map((choice, index) => (
             <motion.button
-              key={choice.id}
+              key={index}
               className="w-full bg-white hover:bg-kakao-yellow border-2 border-gray-200 hover:border-kakao-yellow rounded-xl px-4 py-3 text-left transition-all shadow-sm hover:shadow-md"
-              onClick={() => handleChoice(choice)}
+              onClick={() => handleChoice(index)}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -129,7 +218,7 @@ const Stage1 = () => {
               whileTap={{ scale: 0.98 }}
             >
               <span className="text-sm font-medium text-gray-800">
-                {choice.text}
+                {choice}
               </span>
             </motion.button>
           ))}

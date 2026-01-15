@@ -134,7 +134,52 @@ const ChatInterface = ({ children }) => {
               {dialogueHistory.map((message, index) => {
                 const isNPC = message.sender === 'npc';
                 const isUser = message.sender === 'user';
+                const isEmployeeA = message.sender === 'employeeA';
+                const isEmployeeB = message.sender === 'employeeB';
 
+                // 직원 대화인 경우
+                if (isEmployeeA || isEmployeeB) {
+                  return (
+                    <motion.div
+                      key={`${message.sender}-${index}`}
+                      variants={bubbleVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      className={`flex ${isEmployeeB ? 'justify-end' : 'justify-start'}`}
+                      layout
+                    >
+                      <div className="flex flex-col max-w-xl">
+                        {/* Speaker Name */}
+                        <p className={`text-xs font-semibold mb-1 px-2 ${isEmployeeB ? 'text-right text-gray-300' : 'text-gray-400'}`}>
+                          {isEmployeeA ? '직원A' : '직원B'}
+                        </p>
+                        {/* Speech Bubble */}
+                        <div
+                          className={`
+                            px-5 py-4 rounded-3xl shadow-xl
+                            ${isEmployeeA
+                              ? 'bg-white/95 text-gray-800 rounded-tl-sm'
+                              : 'bg-gray-200/95 text-gray-800 rounded-tr-sm'
+                            }
+                            backdrop-blur-sm border border-white/20
+                          `}
+                        >
+                          <p className="text-base leading-relaxed whitespace-pre-wrap font-medium">
+                            {message.text}
+                          </p>
+                          {message.timestamp && (
+                            <p className="text-xs mt-2 text-gray-400">
+                              {message.timestamp}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
+                // 기존 NPC/User 렌더링
                 return (
                   <motion.div
                     key={`${message.sender}-${index}`}

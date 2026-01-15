@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../context/GameContext';
 import { ITEMS } from '../../constants/items';
@@ -14,10 +14,14 @@ const Stage2 = () => {
   const [messages, setMessages] = useState([]);
   const [isEnded, setIsEnded] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
+  const hasStarted = useRef(false); // 중복 호출 방지
 
   useEffect(() => {
-    // 컴포넌트 마운트 시 대화 시작
-    startConversation();
+    // 컴포넌트 마운트 시 한 번만 대화 시작
+    if (!hasStarted.current) {
+      hasStarted.current = true;
+      startConversation();
+    }
   }, []);
 
   const startConversation = async () => {
@@ -109,17 +113,6 @@ const Stage2 = () => {
       });
 
       setTurnCount(data.turn_count);
-
-      // 실시간 피드백: 어색한 답변
-      if (data.is_awkward && !data.is_ending) {
-        setTimeout(() => {
-          addDialogue({
-            sender: 'npc',
-            text: '⚠️ 방금 답변이 조금 어색했어요! 판교어를 좀 더 자연스럽게 사용해보세요.',
-            timestamp: getCurrentTime(),
-          });
-        }, 1000);
-      }
 
       // 대화 종료 처리
       if (data.is_ending) {

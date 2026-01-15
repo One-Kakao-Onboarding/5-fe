@@ -1,128 +1,318 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGame } from '../../context/GameContext';
 import { ITEMS } from '../../constants/items';
 import ChatInterface from '../ChatInterface';
 
+// API 서버 주소
+const API_BASE_URL = 'http://192.168.8.204:8000';
+
 const Stage4 = () => {
-  const { addDialogue, addItemToInventory } = useGame();
-  const [showRetrospectiveForm, setShowRetrospectiveForm] = useState(false);
-  const [retrospectiveContent, setRetrospectiveContent] = useState('');
+  const { addDialogue, addItemToInventory, returnToMain } = useGame();
+  const [meeting, setMeeting] = useState(null);
+  const [showMinutesForm, setShowMinutesForm] = useState(false);
+  const [minutesContent, setMinutesContent] = useState('');
+  const [evaluation, setEvaluation] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [showEnding, setShowEnding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const hasStarted = useRef(false);
 
   useEffect(() => {
-    // 초기 NPC 대화
-    const timer1 = setTimeout(() => {
+    // 컴포넌트 마운트 시 한 번만 회의 생성
+    if (!hasStarted.current) {
+      hasStarted.current = true;
+      generateMeeting();
+    }
+  }, []);
+
+  const generateMeeting = async () => {
+    setIsLoading(true);
+
+    try {
+      // 랜덤 시나리오 선택 (1, 2, 3 중)
+      const scenarioId = Math.floor(Math.random() * 3) + 1;
+
+      const response = await fetch(`${API_BASE_URL}/generate-meeting`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenario_id: scenarioId,
+          turn_count: 4,
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (!response.ok) {
+        throw new Error('회의 생성 실패');
+      }
+
+      const data = await response.json();
+      setMeeting(data);
+
+      // 초기 안내 메시지
+      setTimeout(() => {
+        addDialogue({
+          sender: 'npc',
+          text: '마지막 단계입니다! 🎯\n회의록 작성 능력을 평가하겠습니다.',
+          timestamp: getCurrentTime(),
+        });
+      }, 500);
+
+      setTimeout(() => {
+        addDialogue({
+          sender: 'npc',
+          text: `📋 회의 주제: ${data.scenario}\n\n${data.context}`,
+          timestamp: getCurrentTime(),
+        });
+      }, 2000);
+
+      // 회의 대화 표시
+      data.dialogue.forEach((msg, index) => {
+        setTimeout(() => {
+          addDialogue({
+            sender: msg.speaker === '직원A' ? 'employeeA' : 'employeeB',
+            text: msg.message,
+            timestamp: getCurrentTime(),
+          });
+        }, 3500 + index * 2000);
+      });
+
+      // 회의록 작성 폼 표시
+      setTimeout(() => {
+        addDialogue({
+          sender: 'npc',
+          text: '위 회의 내용을 바탕으로 회의록을 작성해주세요! ✍️',
+          timestamp: getCurrentTime(),
+        });
+      }, 3500 + data.dialogue.length * 2000);
+
+      setTimeout(() => {
+        setShowMinutesForm(true);
+        setIsLoading(false);
+      }, 4500 + data.dialogue.length * 2000);
+
+    } catch (error) {
+      console.error('회의 생성 오류:', error);
+      setIsLoading(false);
+
       addDialogue({
         sender: 'npc',
-        text: '휴가 잘 다녀오셨나요? 😊',
+        text: '회의를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         timestamp: getCurrentTime(),
       });
-    }, 500);
+    }
+  };
 
-    const timer2 = setTimeout(() => {
-      addDialogue({
-        sender: 'npc',
-        text: '이제 프로젝트 회고(Retrospective) 시간입니다!\n지금까지의 경험을 돌아보는 시간이에요.',
-        timestamp: getCurrentTime(),
-      });
-    }, 2500);
-
-    const timer3 = setTimeout(() => {
-      addDialogue({
-        sender: 'npc',
-        text: '다음 질문에 대해 간단히 작성해주세요:\n- 잘한 점 (Good)\n- 아쉬운 점 (Bad)\n- 개선할 점 (Action)',
-        timestamp: getCurrentTime(),
-      });
-    }, 4500);
-
-    const timer4 = setTimeout(() => {
-      setShowRetrospectiveForm(true);
-    }, 6000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-    };
-  }, [addDialogue]);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (submitted || !retrospectiveContent.trim()) return;
+    if (submitted || !minutesContent.trim()) return;
 
-    // 사용자 회고 추가
+    // 사용자 회의록 추가
     addDialogue({
       sender: 'user',
-      text: `[회고 작성]\n\n${retrospectiveContent}`,
+      text: `[회의록 제출]\n\n${minutesContent}`,
       timestamp: getCurrentTime(),
     });
 
-    setShowRetrospectiveForm(false);
+    setShowMinutesForm(false);
     setSubmitted(true);
+    setIsLoading(true);
 
-    // 성공 메시지
-    setTimeout(() => {
+    // 평가 API 호출
+    try {
+      const response = await fetch(`${API_BASE_URL}/evaluate-minutes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dialogue: meeting.dialogue,
+          key_points: meeting.key_points,
+          user_minutes: minutesContent,
+          used_terms: meeting.used_terms,
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (!response.ok) {
+        throw new Error('평가 실패');
+      }
+
+      const data = await response.json();
+      setEvaluation(data);
+      setIsLoading(false);
+
+      // 평가 결과 표시
+      setTimeout(() => {
+        if (data.is_well_written) {
+          // 합격 (70점 이상)
+          addDialogue({
+            sender: 'npc',
+            text: `✅ 합격입니다! (${data.score}/100점)\n\n${data.feedback}`,
+            timestamp: getCurrentTime(),
+          });
+        } else {
+          // 불합격 (70점 미만)
+          addDialogue({
+            sender: 'npc',
+            text: `❌ 아쉽지만 조금 더 보완이 필요해요. (${data.score}/100점)\n\n${data.feedback}`,
+            timestamp: getCurrentTime(),
+          });
+        }
+      }, 1000);
+
+      // 빠진 포인트 표시
+      if (data.missing_points && data.missing_points.length > 0) {
+        setTimeout(() => {
+          const missingText = data.missing_points.map(point => `• ${point}`).join('\n');
+          addDialogue({
+            sender: 'npc',
+            text: `⚠️ 빠진 핵심 포인트:\n\n${missingText}`,
+            timestamp: getCurrentTime(),
+          });
+        }, 3000);
+      }
+
+      // 오해한 용어 표시
+      if (data.misunderstood_terms && data.misunderstood_terms.length > 0) {
+        setTimeout(() => {
+          const misunderstoodText = data.misunderstood_terms.map(term => `• ${term}`).join('\n');
+          addDialogue({
+            sender: 'npc',
+            text: `❌ 오해한 판교어:\n\n${misunderstoodText}`,
+            timestamp: getCurrentTime(),
+          });
+        }, 5000);
+      }
+
+      // 개선 제안 표시
+      if (data.suggestions && data.suggestions.length > 0) {
+        setTimeout(() => {
+          const suggestionsText = data.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n');
+          addDialogue({
+            sender: 'npc',
+            text: `💡 개선 제안:\n\n${suggestionsText}`,
+            timestamp: getCurrentTime(),
+          });
+        }, 7000);
+      }
+
+      // 합격 시 엔딩
+      if (data.is_well_written) {
+        setTimeout(() => {
+          addDialogue({
+            sender: 'npc',
+            text: '지금까지 정말 수고 많으셨습니다!\n판교 생존의 모든 단계를 완료하셨어요! 🎉',
+            timestamp: getCurrentTime(),
+          });
+        }, 9000);
+
+        setTimeout(() => {
+          addDialogue({
+            sender: 'npc',
+            text: '축하드립니다! 🎁\n"판교 생존 웰컴 키트"를 드릴게요!',
+            timestamp: getCurrentTime(),
+          });
+        }, 11000);
+
+        setTimeout(() => {
+          addItemToInventory(ITEMS.WELCOME_KIT);
+        }, 12500);
+
+        setTimeout(() => {
+          setShowEnding(true);
+        }, 14000);
+      } else {
+        // 불합격 시 재도전
+        setTimeout(() => {
+          addDialogue({
+            sender: 'npc',
+            text: '다시 도전해보시겠어요? 회의록을 수정해서 제출해주세요!',
+            timestamp: getCurrentTime(),
+          });
+        }, 9000);
+
+        setTimeout(() => {
+          setSubmitted(false);
+          setMinutesContent('');
+          setShowMinutesForm(true);
+        }, 10500);
+      }
+
+    } catch (error) {
+      console.error('평가 오류:', error);
+      setIsLoading(false);
+
       addDialogue({
         sender: 'npc',
-        text: '훌륭한 회고네요! 👏\n자신을 돌아보고 개선점을 찾는 자세가 멋져요!',
+        text: '평가 중 오류가 발생했습니다. 다시 시도해주세요.',
         timestamp: getCurrentTime(),
       });
-    }, 1000);
 
-    setTimeout(() => {
-      addDialogue({
-        sender: 'npc',
-        text: '지금까지 정말 수고 많으셨습니다!\n판교 생존의 모든 단계를 완료하셨어요! 🎉',
-        timestamp: getCurrentTime(),
-      });
-    }, 3000);
-
-    setTimeout(() => {
-      addDialogue({
-        sender: 'npc',
-        text: '축하드립니다! 🎁\n"판교 생존 웰컴 키트"를 드릴게요!',
-        timestamp: getCurrentTime(),
-      });
-    }, 5500);
-
-    setTimeout(() => {
-      // 마지막 아이템 획득
-      addItemToInventory(ITEMS.WELCOME_KIT);
-    }, 7000);
-
-    setTimeout(() => {
-      setShowEnding(true);
-    }, 9000);
+      setTimeout(() => {
+        setSubmitted(false);
+        setShowMinutesForm(true);
+      }, 2000);
+    }
   };
 
   return (
     <ChatInterface>
-      {showRetrospectiveForm && !submitted && (
+      {isLoading && !showEnding && (
+        <motion.div
+          className="text-center text-sm text-gray-500"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {submitted ? '회의록을 평가하고 있습니다...' : '회의를 생성하고 있습니다...'}
+        </motion.div>
+      )}
+
+      {showMinutesForm && !submitted && meeting && (
         <motion.form
           onSubmit={handleSubmit}
           className="space-y-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+            <h4 className="text-sm font-bold text-blue-800 mb-2">💡 힌트</h4>
+            <p className="text-xs text-blue-700">
+              회의록에는 회의 주제, 핵심 내용, 판교어 정의, 액션 아이템 등을 포함하세요!
+            </p>
+            <details className="mt-2">
+              <summary className="text-xs font-semibold text-blue-800 cursor-pointer">
+                사용된 판교어 ({meeting.used_terms.length}개)
+              </summary>
+              <ul className="text-xs text-blue-700 mt-2 space-y-1">
+                {meeting.used_terms.map((term, idx) => (
+                  <li key={idx}>
+                    • <strong>{term.용어}</strong>: {term.정의}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+
           <textarea
             className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-kakao-yellow resize-none"
-            rows="8"
-            placeholder="회고를 작성하세요...&#10;&#10;Good (잘한 점):&#10;- &#10;&#10;Bad (아쉬운 점):&#10;- &#10;&#10;Action (개선할 점):&#10;- "
-            value={retrospectiveContent}
-            onChange={(e) => setRetrospectiveContent(e.target.value)}
+            rows="10"
+            placeholder="회의록을 작성하세요...&#10;&#10;예시:&#10;회의 제목: ...&#10;일시: ...&#10;참석자: ...&#10;&#10;논의 내용:&#10;1. ...&#10;&#10;결정 사항:&#10;- ...&#10;&#10;액션 아이템:&#10;- ..."
+            value={minutesContent}
+            onChange={(e) => setMinutesContent(e.target.value)}
           />
 
           <motion.button
             type="submit"
-            className="w-full bg-kakao-yellow hover:bg-yellow-400 text-kakao-brown font-bold py-3 rounded-xl transition-colors shadow-md"
+            className="w-full bg-kakao-yellow hover:bg-yellow-400 text-kakao-brown font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled={!retrospectiveContent.trim()}
+            disabled={!minutesContent.trim()}
           >
-            회고 제출하기 ✍️
+            회의록 제출하기 ✍️
           </motion.button>
         </motion.form>
       )}
@@ -155,6 +345,24 @@ const Stage4 = () => {
           >
             모든 아이템을 획득했습니다! ✨
           </motion.div>
+
+          {evaluation && (
+            <div className="mt-6 text-sm text-gray-600">
+              최종 점수: {evaluation.score}/100점
+            </div>
+          )}
+
+          <motion.button
+            onClick={returnToMain}
+            className="mt-8 bg-white hover:bg-kakao-yellow text-kakao-brown font-bold py-3 px-8 rounded-xl shadow-lg transition-all border-2 border-kakao-yellow"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            메인 화면으로 돌아가기 🏠
+          </motion.button>
         </motion.div>
       )}
     </ChatInterface>
