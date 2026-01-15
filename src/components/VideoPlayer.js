@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 
 const STAGE_TRANSITIONS = {
@@ -32,44 +32,32 @@ const STAGE_TRANSITIONS = {
 const VideoPlayer = () => {
   const { completeTransition, currentStage } = useGame();
   const videoRef = useRef(null);
-  const [hasVideo, setHasVideo] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
 
   const stageInfo = STAGE_TRANSITIONS[currentStage] || STAGE_TRANSITIONS[1];
   const videoPath = stageInfo.video;
 
   useEffect(() => {
-    // 비디오 존재 여부 확인
     const checkVideo = async () => {
       try {
         const response = await fetch(videoPath, { method: 'HEAD' });
         if (response.ok) {
-          setHasVideo(true);
           if (videoRef.current) {
             videoRef.current.play().catch(err => {
               console.error('Video play error:', err);
-              setShowFallback(true);
+              completeTransition(); // 재생 실패 시 바로 다음 스테이지
             });
           }
         } else {
-          setShowFallback(true);
+          completeTransition(); // 비디오 없으면 바로 다음 스테이지
         }
       } catch (err) {
         console.error('Video check error:', err);
-        setShowFallback(true);
+        completeTransition(); // 에러 시 바로 다음 스테이지
       }
     };
 
     checkVideo();
-
-    // 비디오가 없으면 3초 후 자동 전환
-    if (showFallback) {
-      const timer = setTimeout(() => {
-        completeTransition();
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [videoPath, showFallback, completeTransition]);
+  }, [videoPath, completeTransition]);
 
   const handleVideoEnd = () => {
     completeTransition();
@@ -112,96 +100,19 @@ const VideoPlayer = () => {
         ))}
       </div>
 
-      {/* 비디오 또는 폴백 컨텐츠 */}
+      {/* 비디오 */}
       <div className="relative z-10 w-full h-full flex items-center justify-center">
-        {hasVideo && !showFallback ? (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"            onEnded={handleVideoEnd}
-            onError={() => setShowFallback(true)}
-            playsInline
-            muted
-            autoPlay
-          >
-            <source src={videoPath} type="video/mp4" />
-          </video>
-        ) : (
-          // 폴백 애니메이션
-          <AnimatePresence>
-            <motion.div
-              className="text-center px-8"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Stage Clear 아이콘 */}
-              <motion.div
-                className="text-9xl mb-8"
-                animate={{
-                  rotate: [0, 10, -10, 0],
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  repeatDelay: 1,
-                }}
-              >
-                🎉
-              </motion.div>
-
-              {/* 타이틀 */}
-              <motion.h1
-                className="text-6xl font-bold text-kakao-yellow mb-6"
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                {stageInfo.title}
-              </motion.h1>
-
-              {/* 서브타이틀 */}
-              <motion.p
-                className="text-2xl text-white mb-8"
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                {stageInfo.subtitle}
-              </motion.p>
-
-              {/* 다음 스테이지 힌트 */}
-              <motion.div
-                className="bg-white/10 backdrop-blur-sm rounded-2xl px-8 py-6 inline-block"
-                initial={{ y: 50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.7 }}
-              >
-                <p className="text-lg text-kakao-yellow font-semibold mb-2">
-                  다음 미션
-                </p>
-                <p className="text-white text-base">
-                  {stageInfo.nextStage}
-                </p>
-              </motion.div>
-
-              {/* 로딩 바 */}
-              <motion.div
-                className="mt-12 w-64 h-2 bg-white/20 rounded-full overflow-hidden mx-auto"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1 }}
-              >
-                <motion.div
-                  className="h-full bg-kakao-yellow"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 3, ease: 'linear' }}
-                />
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
-        )}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          onEnded={handleVideoEnd}
+          onError={handleVideoEnd}
+          playsInline
+          muted
+          autoPlay
+        >
+          <source src={videoPath} type="video/mp4" />
+        </video>
 
         {/* 스킵 버튼 */}
         <motion.button
